@@ -1,192 +1,73 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useState } from 'react';
-import { StatsHeader } from './components/StatsHeader';
-import { OrderBook } from './components/OrderBook';
+import React, { useState, useEffect } from 'react';
+import { ShieldCheck, Zap } from 'lucide-react';
 import { TradingChart } from './components/TradingChart';
-import { DepthChart } from './components/DepthChart';
+import { OrderBook } from './components/OrderBook';
+import { TradePanel } from './components/TradePanel';
 import { TradeHistory } from './components/TradeHistory';
-import { ControlPanel } from './components/ControlPanel';
-import { useTerminalData } from './hooks/useTerminalData';
+import { PositionsTable } from './components/PositionsTable';
 
-export default function App() {
-  const { ticker, orderBook, history, candles, selectedAsset, setSelectedAsset, assets } = useTerminalData();
-  const [activeTimeframe, setActiveTimeframe] = useState('1M');
+// Интерфейс за основния контейнер
+export default function TradingTerminal() {
+  const [selectedAsset, setSelectedAsset] = useState({
+    id: '1', symbol: 'BTC', name: 'Bitcoin', price: 64230.50, change24h: 2.4
+  });
 
   return (
-    <div className="h-screen bg-terminal-bg flex flex-col selection:bg-terminal-green selection:text-black overflow-hidden">
-      {/* Top Navigation */}
-      <StatsHeader 
-        ticker={ticker} 
-        assets={assets}
-        selectedAsset={selectedAsset}
-        onAssetChange={setSelectedAsset}
-      />
-
-      {/* Main Terminal Grid */}
-      <main className="flex-1 grid grid-cols-12 gap-px bg-terminal-border overflow-hidden">
+    <div className="h-screen bg-[#050505] text-zinc-100 flex flex-col font-sans overflow-hidden select-none">
+      {/* Header - (Използвайте кода от Част 1 тук) */}
+      
+      <main className="flex-1 grid grid-cols-12 gap-1 p-1 overflow-hidden bg-[#0A0A0A]">
         
-3        {/* Left: Order Book */}
-        <section className="col-span-3 bg-black flex flex-col overflow-hidden">
-          <div className="p-3 border-b border-terminal-border flex justify-between items-center bg-black">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Live Order Book</h2>
-            <span className="text-[10px] font-mono text-zinc-600">{selectedAsset}/USD.X</span>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <OrderBook bids={orderBook.bids} asks={orderBook.asks} />
-          </div>
-        </section>
+        {/* Left Sidebar: Assets & Market Depth (3 cols) */}
+        <aside className="col-span-3 flex flex-col gap-1 overflow-hidden">
+           {/* Assets List Component (От Част 1) */}
+           <OrderBook />
+        </aside>
 
-        {/* Center: Chart & Positions */}
-        <section className="col-span-6 bg-black flex flex-col overflow-hidden">
-          {/* Market Summary Header */}
-          <div className="p-4 flex justify-between items-start bg-black border-b border-terminal-border">
-            <div>
-              <div className="text-xl font-bold font-mono text-white">{selectedAsset}/USD <span className="text-zinc-600 text-xs font-normal">BINANCE</span></div>
-              <div className="text-[10px] text-zinc-500 uppercase tracking-tighter">Volume (24h): {ticker.volume.toLocaleString()} {ticker.symbol}</div>
-            </div>
-            <div className="text-right">
-              <div className={`text-xl font-bold font-mono ${ticker.change >= 0 ? 'text-terminal-green' : 'text-terminal-red'}`}>
-                {ticker.change >= 0 ? '+' : ''}{ticker.change.toFixed(2)}%
-              </div>
-              <div className="text-[10px] text-zinc-500 uppercase tracking-tighter">H: {ticker.high.toLocaleString()} / L: {ticker.low.toLocaleString()}</div>
-            </div>
-          </div>
-
-          {/* Main Chart Area */}
-          <div className="flex-1 relative bg-black flex flex-col">
-            <div className="flex-1 relative">
-              <div className="absolute top-4 left-6 z-10 flex items-center space-x-2">
-                {['1M', '5M', '15M', '1H', '4H', '1D'].map(t => (
-                  <button 
-                    key={t} 
-                    onClick={() => setActiveTimeframe(t)}
-                    className={`px-3 py-1.5 min-w-[44px] text-[10px] font-bold rounded-sm border transition-colors ${t === activeTimeframe ? 'bg-white text-black border-white' : 'text-zinc-500 border-zinc-800 hover:text-white hover:border-zinc-500'}`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-              <TradingChart data={candles} />
-            </div>
-            
-            {/* Depth Chart Integration */}
-            <div className="h-24 border-t border-terminal-border">
-               <DepthChart bids={orderBook.bids} asks={orderBook.asks} />
-            </div>
-          </div>
-
-          {/* Positions Table */}
-          <div className="h-60 border-t border-terminal-border p-4 bg-black">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Positions</h3>
-              <div className="flex gap-4 font-mono text-[10px]">
-                <div className="flex gap-2">
-                  <span className="text-zinc-600">Total PnL:</span>
-                  <span className="text-terminal-green">+$4,124.50</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-zinc-600">Margin Level:</span>
-                  <span className="text-white">1,245%</span>
-                </div>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left font-mono text-[11px]">
-                <thead>
-                  <tr className="text-zinc-600 border-b border-terminal-border">
-                    <th className="pb-2 font-normal">Asset</th>
-                    <th className="pb-2 font-normal">Type</th>
-                    <th className="pb-2 font-normal">Size</th>
-                    <th className="pb-2 font-normal">Entry</th>
-                    <th className="pb-2 font-normal">Mark</th>
-                    <th className="pb-2 font-normal text-right">PnL (u)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-terminal-border">
-                  <tr className="group hover:bg-white/5 transition-colors">
-                    <td className="py-3 text-white font-bold">BTC/USD</td>
-                    <td className="py-3 text-terminal-green font-bold">LONG 10x</td>
-                    <td className="py-3 text-zinc-300">0.452</td>
-                    <td className="py-3 text-zinc-500">63,850.00</td>
-                    <td className="py-3 text-zinc-500">64,240.20</td>
-                    <td className="py-3 text-right">
-                      <span className="bg-terminal-green/10 text-terminal-green px-2 py-1 rounded border border-terminal-green/20 font-bold">
-                        +$412.50
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="group hover:bg-white/5 transition-colors">
-                    <td className="py-3 text-white font-bold">ETH/USD</td>
-                    <td className="py-3 text-terminal-red font-bold">SHORT 5x</td>
-                    <td className="py-3 text-zinc-300">12.00</td>
-                    <td className="py-3 text-zinc-500">3,120.40</td>
-                    <td className="py-3 text-zinc-500">3,124.10</td>
-                    <td className="py-3 text-right">
-                      <span className="bg-terminal-red/10 text-terminal-red px-2 py-1 rounded border border-terminal-red/20 font-bold">
-                        -$120.60
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="group hover:bg-white/5 transition-colors">
-                    <td className="py-3 text-white font-bold">SOL/USD</td>
-                    <td className="py-3 text-terminal-green font-bold">LONG 20x</td>
-                    <td className="py-3 text-zinc-300">1,250</td>
-                    <td className="py-3 text-zinc-500">142.10</td>
-                    <td className="py-3 text-zinc-500">145.65</td>
-                    <td className="py-3 text-right">
-                      <span className="bg-terminal-green/10 text-terminal-green px-2 py-1 rounded border border-terminal-green/20 font-bold">
-                        +$3,832.60
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        {/* Right: History & Execution */}
-        <section className="col-span-3 bg-black flex flex-col overflow-hidden">
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <ControlPanel selectedAsset={selectedAsset} price={ticker.price} />
-          </div>
+        {/* Center: Main Canvas (6 cols) */}
+        <section className="col-span-6 flex flex-col gap-1 overflow-hidden">
+          <TradingChart asset={selectedAsset} />
           
-          <div className="h-[280px] border-t border-terminal-border flex flex-col bg-black">
-            <div className="p-3 border-b border-terminal-border">
-              <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Recent Trades</span>
+          {/* Bottom Bento Box: Portfolio & Positions */}
+          <div className="h-1/3 bg-black rounded-xl border border-zinc-800/30 overflow-hidden flex flex-col backdrop-blur-sm shadow-inner">
+            <div className="px-4 py-2 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-900/10">
+               <div className="flex gap-6">
+                 <button className="text-[10px] font-black uppercase tracking-widest text-emerald-500 border-b-2 border-emerald-500 pb-2 translate-y-[9px]">Позиции (1)</button>
+                 <button className="text-[10px] font-black uppercase tracking-widest text-zinc-500 pb-2">Чакащи поръчки (0)</button>
+                 <button className="text-[10px] font-black uppercase tracking-widest text-zinc-500 pb-2">Активи</button>
+               </div>
             </div>
-            <div className="flex-1 overflow-hidden">
-              <TradeHistory history={history} />
-            </div>
+            <PositionsTable />
           </div>
         </section>
+
+        {/* Right Sidebar: Trade & History (3 cols) */}
+        <aside className="col-span-3 flex flex-col gap-1 overflow-hidden">
+          <TradePanel />
+          <TradeHistory />
+        </aside>
+
       </main>
 
-      {/* Footer */}
-      <footer className="h-6 bg-terminal-green text-black flex items-center px-4 justify-between text-[9px] font-black uppercase tracking-widest shrink-0">
-        <div className="flex gap-6">
-          <span className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 bg-black rounded-full shadow-[0_0_4px_rgba(0,0,0,0.5)]"></div>
-            Session: Active (v4.2.1-STB)
-          </span>
-          <span>Node: US-EAST-CLOUDRUN</span>
+      {/* Footer / Status Bar */}
+      <footer className="h-7 bg-black border-t border-zinc-800/50 px-4 flex items-center justify-between text-[10px] text-zinc-600 font-bold tracking-tighter uppercase">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-1.5">
+            <Zap size={10} className="fill-emerald-500 text-emerald-500" />
+            <span className="text-zinc-400">Свързаност:</span>
+            <span className="text-emerald-500">Отлична (12ms)</span>
+          </div>
+          <div className="h-3 w-px bg-zinc-800"></div>
+          <div>API Status: <span className="text-emerald-500">Online</span></div>
         </div>
-        <div className="flex gap-6">
-          <span>Real-time Stream: 12.4kb/s</span>
-          <span className="flex items-center gap-1">
-             Sync Integrity: <ShieldCheck className="w-2.5 h-2.5" /> VERIFIED
-          </span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1">
+            <ShieldCheck size={12} className="text-emerald-500" />
+            <span>Криптирана Връзка (AES-256)</span>
+          </div>
+          <span>© 2026 NovaTrade Professional</span>
         </div>
       </footer>
     </div>
   );
 }
-
-// Internal icon import for footer
-import { ShieldCheck } from 'lucide-react';
-
-
