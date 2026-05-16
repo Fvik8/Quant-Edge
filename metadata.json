@@ -1,0 +1,8 @@
+{
+  "name": "QuantEdge Terminal",
+  "description": "High-frequency trading terminal interface with real-time order books and candlestick analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

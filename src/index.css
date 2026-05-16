@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-terminal-bg: #000000;
+  --color-terminal-surface: #111111;
+  --color-terminal-green: #00FF41;
+  --color-terminal-red: #FF3131;
+  --color-terminal-border: #1A1A1A;
+  --color-terminal-input: #333333;
+}
+
+@layer base {
+  body {
+    @apply bg-terminal-bg text-white font-sans selection:bg-terminal-green selection:text-black;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  .terminal-label {
+    @apply text-[10px] text-zinc-500 uppercase font-bold tracking-widest;
+  }
+  
+  .terminal-value {
+    @apply font-mono tabular-nums;
+  }
+
+  .order-row {
+    @apply grid grid-cols-3 p-1 font-mono text-[11px] transition-colors;
+  }
+}
