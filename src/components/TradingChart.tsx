@@ -1,4 +1,3 @@
-```tsx
 import React, { useMemo } from 'react';
 import { Maximize2, BarChart2, Activity, Clock } from 'lucide-react';
 
@@ -91,4 +90,4 @@ export const TradingChart: React.FC<ChartProps> = ({ asset }) => {
     </div>
   );
 };
-```
+
