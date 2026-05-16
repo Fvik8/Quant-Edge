@@ -1,47 +1,113 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Order } from '../hooks/useTerminalData';
 
-export const OrderBook: React.FC = () => {
-  const asks = Array.from({ length: 12 }, (_, i) => ({ price: 64250 + i * 5, size: (Math.random() * 2).toFixed(3), total: (Math.random() * 10).toFixed(1) }));
-  const bids = Array.from({ length: 12 }, (_, i) => ({ price: 64245 - i * 5, size: (Math.random() * 2).toFixed(3), total: (Math.random() * 10).toFixed(1) }));
+interface OrderBookProps {
+  bids: Order[];
+  asks: Order[];
+}
+
+const OrderRow: React.FC<{ order: Order; maxTotal: number; colorClass: string; blinkClass: string }> = ({ 
+  order, maxTotal, colorClass, blinkClass 
+}) => {
+  const [blink, setBlink] = useState('');
+  const lastSize = useRef(order.size);
+
+  useEffect(() => {
+    if (order.size !== lastSize.current) {
+      setBlink(blinkClass);
+      const timer = setTimeout(() => setBlink(''), 500);
+      lastSize.current = order.size;
+      return () => clearTimeout(timer);
+    }
+  }, [order.size, blinkClass]);
 
   return (
-    <div className="flex-1 bg-black rounded-xl border border-zinc-800/30 flex flex-col overflow-hidden backdrop-blur-sm">
-      <div className="p-3 border-b border-zinc-800/50 bg-zinc-900/20">
-        <h2 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Книга с поръчки (Live)</h2>
+    <motion.div
+      layout
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={`relative grid grid-cols-3 px-3 py-[1px] transition-colors cursor-default group ${colorClass} ${blink}`}
+    >
+      <div 
+        className={`absolute inset-y-0 right-0 opacity-10 transition-all duration-300 pointer-events-none ${colorClass === 'text-terminal-red' ? 'bg-terminal-red' : 'bg-terminal-green'}`}
+        style={{ width: `${(order.total / maxTotal) * 100}%` }}
+      />
+      <span className="font-mono font-bold relative z-10">{order.price.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span>
+      <span className="text-right text-zinc-300 font-mono relative z-10">{order.size.toFixed(4)}</span>
+      <span className="text-right text-zinc-500 font-mono relative z-10">{order.total.toFixed(2)}</span>
+    </motion.div>
+  );
+};
+
+export const OrderBook: React.FC<OrderBookProps> = ({ bids, asks }) => {
+  const maxTotal = Math.max(
+    ...bids.map(b => b.total),
+    ...asks.map(a => a.total)
+  );
+
+  const midPrice = bids.length > 0 && asks.length > 0 ? (bids[0].price + asks[asks.length-1].price) / 2 : 0;
+  const lastMidPrice = useRef(midPrice);
+  const [priceDirection, setPriceDirection] = useState<'up' | 'down' | null>(null);
+
+  useEffect(() => {
+    if (midPrice > lastMidPrice.current) setPriceDirection('up');
+    else if (midPrice < lastMidPrice.current) setPriceDirection('down');
+    lastMidPrice.current = midPrice;
+  }, [midPrice]);
+
+  return (
+    <div className="flex flex-col h-full bg-terminal-bg font-mono text-[11px] select-none tabular-nums">
+      <div className="grid grid-cols-3 px-3 py-2 text-zinc-500 uppercase text-[9px] font-black tracking-widest border-b border-terminal-border bg-terminal-surface/10">
+        <span>Price (USD)</span>
+        <span className="text-right">Size</span>
+        <span className="text-right">Total</span>
       </div>
-      
-      <div className="flex-1 grid grid-rows-2 text-[11px] font-mono">
-        {/* Asks (Sell Orders) */}
-        <div className="flex flex-col-reverse overflow-hidden px-3">
-          {asks.map((order, i) => (
-            <div key={i} className="flex justify-between py-0.5 relative group">
-              <div className="absolute inset-0 bg-rose-500/5 origin-right transition-all" style={{ width: `${Math.random() * 100}%` }}></div>
-              <span className="text-rose-400 font-bold z-10">{order.price.toLocaleString()}</span>
-              <span className="text-zinc-400 z-10">{order.size}</span>
-              <span className="text-zinc-600 z-10">{order.total}</span>
-            </div>
+
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {/* Asks (Sells) */}
+        <div className="flex-1 flex flex-col-reverse overflow-hidden py-1">
+          {asks.slice(0, 16).map((order) => (
+            <OrderRow 
+              key={order.id} 
+              order={order} 
+              maxTotal={maxTotal} 
+              colorClass="text-terminal-red" 
+              blinkClass="blink-red" 
+            />
           ))}
         </div>
 
-        {/* Spread Indicator */}
-        <div className="py-2 bg-zinc-900/40 border-y border-zinc-800/50 flex items-center justify-center gap-4">
-          <span className="text-zinc-100 font-bold">64,247.50</span>
-          <span className="text-[10px] text-zinc-500 font-medium">Spread: 2.50 (0.01%)</span>
+        {/* Mid Price / Spread */}
+        <div className="py-3 border-y border-terminal-border text-center bg-terminal-surface/40">
+          <div className="flex items-center justify-center gap-2">
+             <span className={`text-lg font-black tracking-tight tabular-nums transition-colors ${priceDirection === 'up' ? 'text-terminal-green' : priceDirection === 'down' ? 'text-terminal-red' : 'text-white'}`}>
+               {midPrice.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+             </span>
+             {priceDirection && (
+               <span className={`text-[10px] font-black ${priceDirection === 'up' ? 'text-terminal-green' : 'text-terminal-red'}`}>
+                 {priceDirection === 'up' ? '↑' : '↓'}
+               </span>
+             )}
+          </div>
+          <div className="text-[9px] text-zinc-600 font-black uppercase tracking-widest mt-0.5">
+            Spread: <span className="text-zinc-400">{(asks[asks.length-1]?.price - bids[0]?.price).toFixed(4)}</span>
+          </div>
         </div>
 
-        {/* Bids (Buy Orders) */}
-        <div className="flex flex-col overflow-hidden px-3">
-          {bids.map((order, i) => (
-            <div key={i} className="flex justify-between py-0.5 relative">
-              <div className="absolute inset-0 bg-emerald-500/5 origin-left transition-all" style={{ width: `${Math.random() * 100}%` }}></div>
-              <span className="text-emerald-400 font-bold z-10">{order.price.toLocaleString()}</span>
-              <span className="text-zinc-400 z-10">{order.size}</span>
-              <span className="text-zinc-600 z-10">{order.total}</span>
-            </div>
+        {/* Bids (Buys) */}
+        <div className="flex-1 overflow-hidden py-1">
+          {bids.slice(0, 16).map((order) => (
+            <OrderRow 
+              key={order.id} 
+              order={order} 
+              maxTotal={maxTotal} 
+              colorClass="text-terminal-green" 
+              blinkClass="blink-green" 
+            />
           ))}
         </div>
       </div>
     </div>
   );
 };
-
